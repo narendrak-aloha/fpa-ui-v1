@@ -45,9 +45,11 @@
               v-bind:class="{ 'bridge__leg--active': selectedLeg === leg.key, 'bridge__leg--link': report.report_id }"
               v-bind:role="report.report_id ? 'button' : undefined"
               v-bind:tabindex="report.report_id ? 0 : undefined"
+              v-bind:aria-pressed="report.report_id ? selectedLeg === leg.key : undefined"
               v-bind:title="report.report_id ? `Show the source rows behind ${leg.name}` : ''"
               v-on:click="drill(leg.key)"
               v-on:keydown.enter="drill(leg.key)"
+              v-on:keydown.space.prevent="drill(leg.key)"
             >
               <span class="bridge__leg-name">
                 <span class="block font-medium text-ink-main">{{ leg.name }}</span>
@@ -98,23 +100,40 @@
             </template>
             <template v-if="vintageLabel"> · {{ vintageLabel }}</template>
           </p>
+          <div class="flex items-center gap-3">
           <Button
+            v-if="sourceRowsExpanded"
             v-bind:disabled="nextOffset === null || loadingRows"
             v-bind:loading="loadingRows"
             v-on:click="loadCitations(selectedNode, selectedLeg)"
           >
             {{ nextOffset === null ? 'All rows shown' : 'Show more rows' }}
           </Button>
+          <button
+            type="button"
+            class="bridge__calculate"
+            :aria-expanded="sourceRowsExpanded"
+            @click="sourceRowsExpanded = !sourceRowsExpanded"
+          >
+            {{ sourceRowsExpanded ? 'Collapse' : 'Show' }}
+          </button>
+          </div>
         </div>
+        <div v-show="sourceRowsExpanded" class="bridge__source-content">
         <p v-if="rowsMessage" class="text-sm text-ink-soft">{{ rowsMessage }}</p>
         <p v-if="selectedLeg && contributionShown !== null" class="mb-2 text-xs text-ink-soft">
           The {{ rows.length.toLocaleString() }} rows shown contribute {{ signedMoney(contributionShown) }}
           of the {{ signedMoney(selectedNode[selectedLeg]) }} {{ legName(selectedLeg).toLowerCase() }} effect.
         </p>
-        <div v-if="rows.length" class="max-h-96 overflow-auto rounded border border-line">
+        <p v-if="selectedLeg && rows.length" class="mb-2 text-xs text-ink-soft">
+          Amounts and unit prices below are in local currency. Effect contributions are in USD.
+          Use “Show” in the Calculation column to see the full input precision and exchange rates.
+        </p>
+        <div v-if="rows.length" class="bridge__table-scroll max-h-96 overflow-auto rounded border border-line">
           <table class="bridge__rows">
             <thead>
               <tr>
+                <th v-if="selectedLeg" class="bridge__toggle-column">Calculation</th>
                 <th>Company</th>
                 <th>Month</th>
                 <th>Account</th>
@@ -136,7 +155,14 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in rows" v-bind:key="rowKey(row)">
+              <template v-for="row in rows" v-bind:key="rowKey(row)">
+              <tr>
+                <td v-if="selectedLeg" class="bridge__toggle-column">
+                  <button type="button" class="bridge__calculate" :aria-expanded="expandedRow === rowKey(row)" @click="expandedRow = expandedRow === rowKey(row) ? null : rowKey(row)">
+                    <span aria-hidden="true">{{ expandedRow === rowKey(row) ? '▾' : '▸' }}</span>
+                    {{ expandedRow === rowKey(row) ? 'Hide' : 'Show' }}
+                  </button>
+                </td>
                 <td>{{ row.company_code }}</td>
                 <td>{{ String(row.period_month).slice(0, 7) }}</td>
                 <td>{{ row.account_code }}</td>
@@ -156,8 +182,15 @@
                 <td v-if="selectedLeg" class="num">{{ row.contribution == null ? '—' : number(row.contribution) }}</td>
                 <td v-if="hasVintage" class="num">{{ row.vintage ?? '—' }}</td>
               </tr>
+              <tr v-if="selectedLeg && expandedRow === rowKey(row)">
+                <td :colspan="5 + extraLevels.length + (sameQuantity ? 1 : 2) + (samePrice ? 1 : 2) + (hasVintage ? 1 : 0) + 2" class="bridge__calculation">
+                  <RowCalculation :calculations="row.calculation ? [row.calculation] : []" />
+                </td>
+              </tr>
+              </template>
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </template>
@@ -167,6 +200,7 @@
 <script>
 import { Button, ErrorMessage, LoadingIndicator } from 'frappe-ui'
 import BridgeNode from '@/components/BridgeNode.vue'
+import RowCalculation from '@/components/RowCalculation.vue'
 import { niceName } from '@/utils/dsl'
 
 const LEGS = ['price', 'volume', 'mix', 'fx', 'rate', 'efficiency']
@@ -186,7 +220,7 @@ const USD = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 export default {
   name: 'BridgeReport',
 
-  components: { BridgeNode, Button, ErrorMessage, LoadingIndicator },
+  components: { BridgeNode, RowCalculation, Button, ErrorMessage, LoadingIndicator },
 
   props: {
     // { dsl, nonce }: nonce changes even when the same DSL is run again
@@ -206,6 +240,8 @@ export default {
       rows: [],
       rowsMessage: '',
       selectedLeg: null,
+      sourceRowsExpanded: true,
+      expandedRow: null,
       nextOffset: 0,
       loading: false,
       loadingRows: false,
@@ -349,6 +385,8 @@ export default {
     },
 
     resetRows() {
+      this.sourceRowsExpanded = true
+      this.expandedRow = null
       this.rows = []
       this.rowsMessage = ''
       this.nextOffset = 0
@@ -395,21 +433,39 @@ export default {
 </script>
 
 <style scoped>
+.bridge__calculate { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2rem; color: var(--accent); }
+.bridge__calculate:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bridge__calculate:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.bridge__rows .bridge__toggle-column { position: sticky; left: 0; z-index: 1; background: var(--card); box-shadow: 1px 0 0 var(--line); }
+.bridge__rows th.bridge__toggle-column { z-index: 3; }
+.bridge__rows td.bridge__calculation { white-space: normal; background: var(--paper); }
 .bridge__leg--link {
   cursor: pointer;
   border-radius: 6px;
 }
 .bridge__leg--link:hover,
 .bridge__leg--link:focus-visible {
-  background: var(--surface-hover, rgba(0, 0, 0, 0.04));
-  outline: none;
+  background: var(--wash);
 }
+.bridge__leg--link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bridge__leg--active {
-  box-shadow: inset 3px 0 0 currentColor;
+  background: var(--accent-wash);
 }
+.bridge__leg--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.bridge__table-scroll { position: relative; isolation: isolate; }
 .bridge__rows {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.75rem;
 }
 .bridge__rows th,
@@ -422,6 +478,7 @@ export default {
 .bridge__rows th {
   position: sticky;
   top: 0;
+  z-index: 2;
   background: var(--card, #fff);
   font-weight: 600;
 }
@@ -455,6 +512,8 @@ export default {
   }
 }
 .bridge__leg {
+  position: relative;
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
   display: grid;
   grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr) 9rem;
   align-items: center;

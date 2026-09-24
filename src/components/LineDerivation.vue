@@ -23,10 +23,22 @@
             </div>
             <p class="deriv__move">
               {{ driver.from }} <span aria-hidden="true">→</span><span class="sr-only">to</span> {{ driver.to }}
-              <span class="deriv__change" v-bind:class="driver.change < 0 ? 'deriv__change--down' : 'deriv__change--up'">
-                {{ signedPercent(driver.change) }}
+              <span v-if="!driver.hasValues || driver.fromNumber !== 0" class="deriv__change" v-bind:class="driver.change < 0 ? 'deriv__change--down' : 'deriv__change--up'">
+                {{ signedPercent(driver.change) }} relative change
               </span>
             </p>
+            <div v-if="driver.hasValues" class="deriv__change-math">
+              <p>
+                Absolute change: {{ driver.to }} − {{ driver.from }} =
+                <strong>{{ signedNumber((driver.toNumber - driver.fromNumber) * (driver.percentage ? 100 : 1)) }}{{ driver.percentage ? ' percentage points' : '' }}</strong>
+              </p>
+              <p v-if="driver.fromNumber !== 0">
+                Relative change: ({{ driver.to }} − {{ driver.from }}) ÷ {{ driver.from }} × 100 =
+                <strong>{{ signedPercent(((driver.toNumber - driver.fromNumber) / driver.fromNumber) * 100) }}</strong>
+              </p>
+              <p v-else>Relative change cannot be calculated from a zero starting value.</p>
+              <p v-if="driver.percentage">Percentage points measure the difference between the two percentages. Relative change compares that difference with the starting value.</p>
+            </div>
             <p v-if="driver.scope" class="text-sm text-ink-soft">For {{ driver.scope }}</p>
             <p v-if="!driver.direct && driver.formula" class="text-sm text-ink-soft">
               Worked out as <code class="deriv__inline">{{ driver.formula }}</code>
@@ -181,6 +193,10 @@ export default {
           direct: Boolean(value.shocked_directly),
           from: driverValue(value.from),
           to: driverValue(value.to),
+          fromNumber: Number(value.from),
+          toNumber: Number(value.to),
+          hasValues: value.from != null && value.to != null && Number.isFinite(Number(value.from)) && Number.isFinite(Number(value.to)),
+          percentage: /^(utilisation|utilization)(?:\s|$)/i.test(key) || (driverValue(value.from).endsWith('%') && driverValue(value.to).endsWith('%')),
           change: (Number(value.ratio) - 1) * 100,
           scope: value.scope ? `${companiesLabel(value.scope.companies)}, ${monthsLabel(value.scope.months)}` : '',
           formula: value.formula,
@@ -207,6 +223,9 @@ export default {
   },
 
   methods: {
+    signedNumber(value) {
+      return `${value < 0 ? '−' : '+'}${Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 4 })}`
+    },
     number(value, digits) {
       const n = Number(value)
       if (!Number.isFinite(n)) return value ?? ''
@@ -284,6 +303,8 @@ export default {
   font-size: 0.875rem;
   font-weight: 600;
 }
+.deriv__change-math { margin-top: 0.5rem; font-size: 0.8125rem; line-height: 1.6; color: var(--ink-soft); }
+.deriv__change-math strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 .deriv__change--down {
   color: var(--signal);
 }
