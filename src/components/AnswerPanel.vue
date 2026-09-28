@@ -12,10 +12,11 @@
 
     <!-- 2. The figures the answer may cite, largest first -->
     <div v-if="rows.length" class="border-t px-4 py-3">
-      <div class="overflow-x-auto">
+      <div class="answer__scroll overflow-x-auto">
         <table class="answer__table">
           <thead>
             <tr>
+              <th class="answer__toggle-column">Calculation</th>
               <th
                 v-for="(column, index) in columns"
                 v-bind:key="column"
@@ -26,7 +27,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, rowIndex) in shownRows" v-bind:key="rowIndex">
+            <template v-for="(row, rowIndex) in shownRows" v-bind:key="rowIndex">
+            <tr>
+              <td class="answer__toggle-column">
+                <button type="button" class="answer__calculate" :aria-expanded="expandedRow === rowIndex" @click="expandedRow = expandedRow === rowIndex ? null : rowIndex">
+                  <span aria-hidden="true">{{ expandedRow === rowIndex ? '▾' : '▸' }}</span>
+                  {{ expandedRow === rowIndex ? 'Hide' : 'Show' }}
+                </button>
+              </td>
               <td
                 v-for="(column, index) in columns"
                 v-bind:key="column"
@@ -35,6 +43,12 @@
                 {{ formatCell(column, row[column], decimals[index]) }}
               </td>
             </tr>
+            <tr v-if="expandedRow === rowIndex">
+              <td :colspan="columns.length + 1" class="answer__calculation">
+                <RowCalculation :calculations="rowCalculations(row)" />
+              </td>
+            </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -60,8 +74,8 @@
       <BridgeReport v-bind:request="bridgeRequest" />
     </div>
 
-    <div v-if="driftFlags" class="border-t px-4 py-3">
-      <pre class="overflow-x-auto rounded bg-surface-gray-2 p-3 text-xs text-ink-gray-7">{{ driftFlags }}</pre>
+    <div v-if="driftFlags.length" class="border-t px-4 py-3">
+      <VintageChanges :flags="driftFlags" />
     </div>
 
     <div class="border-t px-4 py-3">
@@ -80,6 +94,9 @@
 <script>
 import { Button } from 'frappe-ui'
 import BridgeReport from '@/components/BridgeReport.vue'
+import RowCalculation from '@/components/RowCalculation.vue'
+import VintageChanges from '@/components/VintageChanges.vue'
+import { answerRowCalculations } from '@/utils/rowCalculations'
 import { companiesLabel, driverName, driverValue, monthsLabel } from '@/utils/labels'
 import { OUTCOME, compactCompanies, formatCell, niceName } from '@/utils/dsl'
 
@@ -97,7 +114,7 @@ function readable(text) {
 export default {
   name: 'AnswerPanel',
 
-  components: { Button, BridgeReport },
+  components: { Button, BridgeReport, RowCalculation, VintageChanges },
 
   props: {
     query: { type: String, required: true },
@@ -112,6 +129,7 @@ export default {
   data() {
     return {
       showEmpty: false,
+      expandedRow: null,
       bridgeRequest: null,
     }
   },
@@ -141,7 +159,10 @@ export default {
       if (this.failed) {
         return { tone: 'bad', title: "The question couldn't be answered right now." }
       }
-      return OUTCOME[this.status] || OUTCOME.REQUEST_ERROR
+      // A status may be refined by refusal_reason; fall back to the status
+      // alone, so a reason this build does not know about still reads sensibly.
+      const reason = this.answer.refusal_reason
+      return (reason && OUTCOME[`${this.status}:${reason}`]) || OUTCOME[this.status] || OUTCOME.REQUEST_ERROR
     },
 
     rows() {
@@ -213,21 +234,29 @@ export default {
     },
 
     driftFlags() {
-      return this.answer.drift_flags && this.answer.drift_flags.length
-        ? `Recorded vintage drift:\n${JSON.stringify(this.answer.drift_flags, null, 2)}`
-        : ''
+      return this.answer.drift_flags || []
     },
   },
 
   watch: {
+    showEmpty() {
+      this.expandedRow = null
+    },
     // A new answer starts folded, as a fresh question should.
     result() {
+      this.expandedRow = null
       this.showEmpty = false
       this.bridgeRequest = null
     },
   },
 
   methods: {
+    rowCalculations(row) {
+      const supplied = this.result.row_calculations?.[this.rows.indexOf(row)] || []
+      const fallback = answerRowCalculations(row, this.dsl)
+        .filter(item => !supplied.some(calculation => calculation.label === item.label))
+      return [...supplied, ...fallback]
+    },
     formatCell,
     niceName,
 
@@ -239,6 +268,11 @@ export default {
 </script>
 
 <style scoped>
+.answer__calculate { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2rem; color: var(--accent); }
+.answer__calculate:hover { text-decoration: underline; text-underline-offset: 3px; }
+.answer__calculate:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.answer__table .answer__toggle-column { position: sticky; left: 0; z-index: 1; background: var(--card); box-shadow: 1px 0 0 var(--line); }
+.answer__table td.answer__calculation { white-space: normal; background: var(--paper); }
 .answer {
   background: var(--card);
   border: 1px solid var(--line);
@@ -252,10 +286,13 @@ export default {
   line-height: 1.6;
 }
 .answer__table {
+  border-collapse: separate;
+  border-spacing: 0;
   width: 100%;
   font-size: 0.875rem;
   text-align: left;
 }
+.answer__scroll { position: relative; isolation: isolate; }
 .answer__table th {
   padding: 0.375rem 0.5rem;
   font-weight: 500;

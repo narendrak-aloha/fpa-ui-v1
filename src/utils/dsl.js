@@ -113,6 +113,10 @@ export const OUTCOME = {
   SUCCESS: { tone: 'ok', title: '' },
   REFORECAST_PROPOSED: { tone: 'good', title: 'Re-forecast drafted. Confirm it to re-run the plan lines.' },
   OUT_OF_SCOPE: { tone: 'neutral', title: "This question isn't about the finance data." },
+  // OUT_OF_SCOPE covers two unrelated refusals; refusal_reason says which.
+  // Being refused a country is an access decision, not a remark about the
+  // question, so it reads as one and carries the same weight as other refusals.
+  'OUT_OF_SCOPE:COUNTRY_NOT_AUTHORIZED': { tone: 'bad', title: 'You are not authorized to view this country.' },
   REJECTED_SCOPE: { tone: 'bad', title: "You don't have access to all the data this question needs." },
   REFUSED: { tone: 'bad', title: 'The request was refused by a safety guardrail.' },
   VALIDATION_ERROR: { tone: 'bad', title: "The question couldn't be turned into a valid data request. Try rewording it." },
@@ -121,8 +125,8 @@ export const OUTCOME = {
 
 export const PROVIDER_NAMES = {
   'claude-code': 'Claude (subscription)',
-  'claude-api': 'Claude API key',
-  gemini: 'Gemini',
+  'claude-api': 'Claude (API key)',
+  gemini: 'Gemini (API key)',
 }
 
 export function describeDuration(ms) {

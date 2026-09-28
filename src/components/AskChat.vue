@@ -137,7 +137,7 @@
             <summary>{{ scopeLabel }}</summary>
             <div class="chat__scope-menu">
               <label class="chat__scope-all">
-                <input type="checkbox" v-bind:checked="!chosen.length" v-on:change="chosen = []" />
+                <input type="checkbox" v-bind:checked="allSelected" v-on:change="selectAll($event.target.checked)" />
                 All my companies ({{ user.companies.length }})
               </label>
               <div v-for="group in companyGroups" v-bind:key="group.country" class="chat__scope-group">
@@ -156,17 +156,20 @@
               </div>
             </div>
           </details>
-          <label v-if="configuredProviders.length > 1" class="chat__provider">
-            Answered by
-            <select v-model="provider">
-              <option v-for="option in configuredProviders" v-bind:key="option.id" v-bind:value="option.id">
+          <div class="chat__provider-field">
+          <label class="chat__provider">
+            Provider
+            <select v-model="provider" :disabled="pending" :aria-invalid="Boolean(providerError)" :aria-describedby="providerError ? 'chat-provider-error' : undefined">
+              <option v-for="option in $root.config.PROVIDERS" v-bind:key="option.id" v-bind:value="option.id">
                 {{ option.label }}
               </option>
             </select>
           </label>
-          <span class="chat__hint">Each question is answered on its own. Enter to ask, Shift+Enter for a new line.</span>
+          <p v-if="providerError" id="chat-provider-error" class="chat__provider-error" role="alert">{{ providerError }}</p>
+          </div>
           <Button type="submit" variant="solid" class="ml-auto" v-bind:disabled="!canSend" v-bind:loading="pending">Ask</Button>
         </div>
+        <p class="chat__hint">Each question is answered on its own. Enter to ask, Shift+Enter for a new line.</p>
       </form>
     </section>
 
@@ -239,7 +242,7 @@ export default {
     },
 
     canSend() {
-      return this.draft.trim().length > 0 && !this.pending
+      return this.draft.trim().length > 0 && !this.pending && !this.providerError
     },
 
     elapsedSeconds() {
@@ -250,21 +253,39 @@ export default {
       return new Set(this.messages.map((message) => message.askId).filter(Boolean))
     },
 
-    configuredProviders() {
-      return this.$root.config.PROVIDERS.filter((option) => {
-        const found = this.providerStatus.find((status) => status.id === option.id)
-        return found ? found.configured : option.id === this.$root.config.PROVIDERS[0].id
-      })
+    providerError() {
+      if (/^SELECT\b/i.test(this.draft.trim())) return ''
+      const option = this.$root.config.PROVIDERS.find(option => option.id === this.provider)
+      const status = this.providerStatus.find(status => status.id === this.provider)
+      return option?.apiKeyEnv && status?.configured === false
+        ? `API key is missing for ${option.label}. Set ${option.apiKeyEnv}.`
+        : ''
     },
 
+    // What this person can actually do, in the order they would try it: the
+    // re-forecast first for a planner, because it is the only one that writes
+    // anything, then the bridge, which is the answer with a shape to it.
     examples() {
+      const config = this.$root.config
       const list = []
       if (this.user.hasRole('planner')) {
-        list.push({ text: this.$root.config.REFORECAST_EXAMPLE, note: 'Drafts a re-forecast for you to confirm' })
+        list.push({ text: config.REFORECAST_EXAMPLE, note: 'Drafts a re-forecast for you to confirm' })
       }
-      list.push(...this.$root.config.EXAMPLES.map((text) => ({ text })))
-      list.push(...this.$root.config.DIRECT_EXAMPLES.map((text) => ({ text, note: 'Query language, answered without AI', code: true })))
+      list.push(...config.BRIDGE_EXAMPLES.map((text) => ({ text, note: 'Variance bridge: price, volume, mix and FX' })))
+      list.push(...config.EXAMPLES.map((text) => ({ text })))
+      list.push(...config.DIRECT_EXAMPLES.map((text) => ({ text, note: 'Query language, answered without AI', code: true })))
       return list
+    },
+
+    allCompanyCodes() {
+      return [...this.user.companies].sort()
+    },
+
+    // Empty has always meant "everything I can see", and the server still
+    // reads it that way. Ticking every box means the same thing, so both
+    // count as all: otherwise the box would untick itself on the last click.
+    allSelected() {
+      return !this.chosen.length || this.chosen.length === this.allCompanyCodes.length
     },
 
     companyGroups() {
@@ -274,7 +295,7 @@ export default {
     },
 
     scopeLabel() {
-      if (!this.chosen.length) return 'All my companies'
+      if (this.allSelected) return 'All my companies'
       const whole = this.companyGroups.filter((group) => group.codes.every((code) => this.chosen.includes(code)))
       const covered = whole.flatMap((group) => group.codes)
       if (whole.length && covered.length === this.chosen.length) return `Only ${whole.map((group) => group.name).join(' and ')}`
@@ -328,9 +349,6 @@ export default {
     }
     this.$root.api.getProviders().then((response) => {
       if (!response.error) this.providerStatus = response.data
-      if (!this.configuredProviders.some((option) => option.id === this.provider) && this.configuredProviders.length) {
-        this.provider = this.configuredProviders[0].id
-      }
     })
     this.loadHistory()
   },
@@ -368,6 +386,10 @@ export default {
       if (item.status === 'REFORECAST_PROPOSED') return 're-forecast drafted'
       if (['SUCCESS'].includes(item.status)) return ''
       return 'not answered'
+    },
+
+    selectAll(on) {
+      this.chosen = on ? [...this.allCompanyCodes] : []
     },
 
     toggleCountry(group, on) {
@@ -457,6 +479,7 @@ export default {
     async send(text) {
       const question = (text ?? this.draft).trim()
       if (!question || this.pending) return
+      if (!/^SELECT\b/i.test(question) && this.providerError) return
       const key = `ask-${Date.now()}`
       this.messages.push({ key, question, askedAt: new Date().toISOString(), pending: true, result: null })
       if (text === undefined) this.draft = ''
@@ -470,7 +493,7 @@ export default {
       const response = await this.$root.callAuthenticatedEndpoint('askQuestion', {
         query: question,
         provider: this.provider,
-        companies: this.chosen,
+        companies: this.allSelected ? [] : this.chosen,
       })
       clearInterval(this.clockTimer)
 
@@ -678,6 +701,7 @@ export default {
 /* Composer */
 .chat__composer {
   position: sticky;
+  z-index: 20;
   bottom: 0;
   display: flex;
   flex-direction: column;
@@ -724,6 +748,22 @@ export default {
   font-size: 0.75rem;
   color: var(--ink-soft);
 }
+.chat__provider-field {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  min-width: 0;
+}
+.chat__provider-error {
+  flex: 1 1 18rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--signal);
+  overflow-wrap: anywhere;
+}
 .chat__provider {
   display: inline-flex;
   align-items: center;
@@ -739,6 +779,8 @@ export default {
   font-size: 0.8125rem;
   color: var(--ink);
 }
+.chat__provider select[aria-invalid='true'] { border-color: var(--signal); }
+.chat__provider select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .chat__scope {
   position: relative;
