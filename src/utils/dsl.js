@@ -125,6 +125,7 @@ export const OUTCOME = {
 
 export const PROVIDER_NAMES = {
   'claude-code': 'Claude (subscription)',
+  codex: 'Codex (subscription)',
   'claude-api': 'Claude (API key)',
   gemini: 'Gemini (API key)',
 }

@@ -24,6 +24,7 @@ const appConfig = {
   // Model providers, in the order they are offered
   PROVIDERS: [
     { id: 'claude-code', label: 'Claude (subscription)', title: 'Uses your Claude Code login, no API key needed' },
+    { id: 'codex', label: 'Codex (subscription)', title: 'Uses your Codex ChatGPT login, no API key needed' },
     { id: 'claude-api', label: 'Claude (API key)', title: 'Needs ANTHROPIC_API_KEY', apiKeyEnv: 'ANTHROPIC_API_KEY' },
     { id: 'gemini', label: 'Gemini (API key)', title: 'Needs GOOGLE_API_KEY', apiKeyEnv: 'GOOGLE_API_KEY' },
   ],
