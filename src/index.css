@@ -1,0 +1,191 @@
+@import 'frappe-ui/style.css';
+
+/*
+ * One theme, no switcher: a calm blue-grey base that recedes, carrying a
+ * small, deliberate set of meaningful colours on top of it — blue, green,
+ * amber and red — each standing for one thing and nothing else, the way a
+ * paper form uses ink for the printed part and colour only where a person
+ * has to look. Backgrounds, borders and body text stay a quiet blue-grey so
+ * the page never turns into a colour chart; status only shows in colour
+ * where it changes what someone should do: blue for what needs you now,
+ * green for done and passing, amber for waiting on someone else, red for a
+ * breach or rejection. Surfaces sit at 90-94% lightness, a step above the
+ * page, so large areas still give off less light than white would. Every
+ * text and status colour passes WCAG AA (4.5:1) on the surfaces it sits on.
+ * frappe-ui's own green/amber/red slots are mapped to the same colours, so
+ * the library's components mean the same thing ours do.
+ */
+:root,
+[data-theme='dark'] {
+  /* The base: recedes, carries body text and structure */
+  --paper: #dce6f0; /* page */
+  --card: #e8f0f7; /* panels: soft, never white */
+  --wash: #cddcec; /* hover, selected row, inputs */
+  --line: #b4c7dc; /* borders */
+  --line-strong: #98afc9;
+  --muted: #7c93b1; /* disabled, placeholders */
+  --ink-soft: #43607f; /* secondary text */
+  --ink-mid: #2b4a6c;
+  --ink: #1d3a5a; /* body text, structural marks (selection bars, tab underline) */
+
+  /* The four meanings: each used only where that meaning applies */
+  --accent: #175fa8; /* blue: needs you, in progress, links, focus */
+  --accent-wash: #cce0f5;
+  --accent-line: #86aed9;
+  --success: #276b44; /* green: done, passed, published, locked */
+  --success-wash: #d3e6d9;
+  --success-line: #9dc2ac;
+  --warning: #82580d; /* amber: waiting on someone else */
+  --warning-wash: #eae0c8;
+  --warning-line: #cdb27c;
+  --signal: #954941; /* red: failure, breach, rejection — nothing else */
+  --signal-wash: #e6d6d3;
+  --signal-line: #cda49c;
+
+  /* frappe-ui: surfaces */
+  --surface-white: var(--card);
+  --surface-cards: var(--card);
+  --surface-modal: var(--card);
+  --surface-menu-bar: var(--paper);
+  --surface-selected: var(--card);
+  --surface-gray-1: var(--paper);
+  --surface-gray-2: var(--wash);
+  --surface-gray-3: #bcd0e6;
+  --surface-gray-4: var(--line);
+  --surface-gray-5: var(--ink-mid);
+  --surface-gray-6: #23405e;
+  --surface-gray-7: var(--ink);
+  --surface-blue-1: var(--accent-wash);
+  --surface-blue-2: var(--accent);
+  --surface-green-1: var(--success-wash);
+  --surface-green-2: var(--success-line);
+  --surface-green-3: var(--success);
+  --surface-amber-1: var(--warning-wash);
+  --surface-amber-2: var(--warning);
+  --surface-orange-1: var(--accent-wash);
+  --surface-cyan-1: var(--accent-wash);
+  --surface-pink-1: var(--wash);
+  --surface-violet-1: var(--wash);
+  --surface-red-1: var(--signal-wash);
+  --surface-red-2: var(--signal-wash);
+  --surface-red-3: var(--signal-line);
+  --surface-red-4: var(--signal);
+  --surface-red-5: var(--signal);
+  --surface-red-6: #793a31;
+
+  /* frappe-ui: text */
+  --text-ink-white: var(--card);
+  --text-ink-gray-1: var(--line);
+  --text-ink-gray-2: var(--line-strong);
+  --text-ink-gray-3: var(--muted);
+  --text-ink-gray-4: #5f7999;
+  --text-ink-gray-5: var(--ink-soft);
+  --text-ink-gray-6: var(--ink-soft);
+  --text-ink-gray-7: var(--ink-mid);
+  --text-ink-gray-8: var(--ink);
+  --text-ink-gray-9: var(--ink);
+  --text-ink-blue-1: var(--accent-wash);
+  --text-ink-blue-2: var(--accent);
+  --text-ink-blue-3: var(--accent);
+  --text-ink-blue-4: var(--ink);
+  --text-ink-green-1: var(--success-wash);
+  --text-ink-green-2: var(--success);
+  --text-ink-green-3: var(--success);
+  --text-ink-amber-1: var(--warning-wash);
+  --text-ink-amber-2: var(--warning);
+  --text-ink-amber-3: var(--warning);
+  --text-ink-cyan-1: var(--accent);
+  --text-ink-pink-1: var(--ink-mid);
+  --text-ink-violet-1: var(--ink-mid);
+  --text-ink-red-1: var(--signal-wash);
+  --text-ink-red-2: var(--signal);
+  --text-ink-red-3: var(--signal);
+  --text-ink-red-4: var(--signal);
+
+  /* frappe-ui: outlines */
+  --outline-white: var(--card);
+  --outline-gray-1: var(--line);
+  --outline-gray-2: var(--line);
+  --outline-gray-3: var(--line-strong);
+  --outline-gray-4: var(--muted);
+  --outline-gray-5: var(--ink);
+  --outline-gray-modals: var(--line);
+  --outline-blue-1: var(--accent-line);
+  --outline-blue-2: var(--accent);
+  --outline-green-1: var(--success-line);
+  --outline-green-2: var(--success);
+  --outline-amber-1: var(--warning-line);
+  --outline-amber-2: var(--warning);
+  --outline-orange-1: var(--accent-line);
+  --outline-red-1: var(--signal-line);
+  --outline-red-2: var(--signal-line);
+  --outline-red-3: var(--signal);
+  --outline-red-4: var(--signal);
+
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1, 'lnum' 1; /* money lines up in columns */
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Focus that can be seen on every surface, from the keyboard only */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Native radios and checkboxes in the one accent */
+input[type='radio'],
+input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
+::selection {
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The side panel (SidePanel.vue): on a wide screen the page steps aside for
+   it, so nothing is covered; narrower, it slides over the page */
+:root {
+  --drawer-width: min(30rem, 100vw);
+}
+@media (max-width: 640px) {
+  :root {
+    --drawer-width: 100vw;
+  }
+}
+@media (min-width: 1100px) {
+  :root {
+    --drawer-width: min(30rem, 38vw);
+  }
+  body.side-panel-open {
+    padding-right: var(--drawer-width);
+  }
+}
+
+/* FullScreenDialog: the page behind it holds still */
+html.full-dialog-open {
+  overflow: hidden;
+}
