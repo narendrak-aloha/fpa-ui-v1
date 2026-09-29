@@ -64,6 +64,14 @@ export function driverValue(value) {
   return number > 0 && number <= 1 ? `${+(number * 100).toFixed(2)}%` : number.toLocaleString('en-US')
 }
 
+// A country code as a reader expects it, with the code kept alongside: the
+// code is what the catalogue, the API and support conversations all use, so
+// dropping it would make the screen harder to talk about, not easier.
+export function countryName(code) {
+  const key = String(code || '').toUpperCase()
+  return COUNTRIES[key] ? `${COUNTRIES[key]} (${key})` : key
+}
+
 // Company codes carry their country (RTPL1 is Poland); a full country reads as its name
 export function companiesLabel(companies) {
   if (!companies?.length) return 'All companies'

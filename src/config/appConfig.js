@@ -24,8 +24,8 @@ const appConfig = {
   // Model providers, in the order they are offered
   PROVIDERS: [
     { id: 'claude-code', label: 'Claude (subscription)', title: 'Uses your Claude Code login, no API key needed' },
-    { id: 'claude-api', label: 'Claude API key', title: 'Needs ANTHROPIC_API_KEY' },
-    { id: 'gemini', label: 'Gemini', title: 'Needs GOOGLE_API_KEY' },
+    { id: 'claude-api', label: 'Claude (API key)', title: 'Needs ANTHROPIC_API_KEY', apiKeyEnv: 'ANTHROPIC_API_KEY' },
+    { id: 'gemini', label: 'Gemini (API key)', title: 'Needs GOOGLE_API_KEY', apiKeyEnv: 'GOOGLE_API_KEY' },
   ],
 
   // Questions offered as one-click examples
@@ -36,7 +36,16 @@ const appConfig = {
     'Compare base plan vs actual services revenue by company for 2026-Q2',
   ],
 
-  // Offered to planners: a question that drafts a re-forecast for sign-off
+  // The variance bridge: a "why" question, which splits the gap into price,
+  // volume, mix and FX rather than answering with one number.
+  BRIDGE_EXAMPLES: [
+    'Why did Poland miss its services revenue plan in Q2 2026? Break it down by practice.',
+    'Why is delivery cost above plan for Q2 2026?',
+  ],
+
+  // Offered to planners: a question that drafts a re-forecast for sign-off.
+  // Short and imperative on purpose: a descriptive sentence is read as a
+  // question and comes back without a draft.
   REFORECAST_EXAMPLE: 'Drop Poland utilisation to 72% and re-run the second half',
 
   // Runs straight through the compiler, with no model involved

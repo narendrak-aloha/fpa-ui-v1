@@ -164,10 +164,10 @@
                     type="button"
                     class="country__head"
                     v-bind:aria-pressed="coverageOf(country) === 'full'"
-                    v-bind:title="coverageOf(country) === 'full' ? `Remove all of ${country.code}` : `Grant all of ${country.code}`"
+                    v-bind:title="coverageOf(country) === 'full' ? `Remove all of ${country.name}` : `Grant all of ${country.name}`"
                     v-on:click="setCountry(country, coverageOf(country) !== 'full')"
                   >
-                    <span class="country__code">{{ country.code }}</span>
+                    <span class="country__code">{{ country.name }}</span>
                     <span class="country__count">{{ chosenIn(country) }} of {{ country.companies.length }}</span>
                   </button>
                   <div class="country__entities">
@@ -239,7 +239,7 @@
 <script>
 import { Button, ErrorMessage, FormControl } from 'frappe-ui'
 import StatusPill from '@/components/StatusPill.vue'
-import { personName } from '@/utils/labels'
+import { countryName, personName } from '@/utils/labels'
 
 const ROLE_LABELS = { analyst: 'Analyst', planner: 'Planner', controller: 'Controller', cfo: 'CFO', superadmin: 'Superadmin' }
 // For the superadmin reading this list, a sign-up waiting on them is
@@ -319,7 +319,7 @@ export default {
         if (!byCountry.has(company.country_code)) byCountry.set(company.country_code, [])
         byCountry.get(company.country_code).push(company)
       }
-      return [...byCountry].map(([code, companies]) => ({ code, companies }))
+      return [...byCountry].map(([code, companies]) => ({ code, name: countryName(code), companies }))
     },
 
     editable() {
@@ -988,7 +988,9 @@ export default {
 .coverage {
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  /* Wide enough for the longest country name and its code on one or two
+     lines: "United Arab Emirates (AE)". */
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
 }
 .country {
   border: 1px solid var(--line);
@@ -1008,19 +1010,27 @@ export default {
   width: 100%;
   align-items: baseline;
   justify-content: space-between;
+  gap: 0.375rem;
   padding: 0.5rem 0.625rem 0.25rem;
   text-align: left;
 }
 .country__code {
-  font-size: 1.125rem;
+  /* A name is several words where a code was two letters, so it wraps rather
+     than pushing the count out of the card. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9375rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  line-height: 1.25;
   color: var(--ink);
 }
+
 .country--none .country__code {
   color: var(--ink-soft);
 }
 .country__count {
+  flex: 0 0 auto;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--ink-soft);
