@@ -271,7 +271,8 @@ export default {
       if (this.user.hasRole('planner')) {
         list.push({ text: config.REFORECAST_EXAMPLE, note: 'Drafts a re-forecast for you to confirm' })
       }
-      list.push(...config.BRIDGE_EXAMPLES.map((text) => ({ text, note: 'Variance bridge: price, volume, mix and FX' })))
+      const bridgeExamples = this.user.hasRole('planner') ? config.PLANNER_BRIDGE_EXAMPLES : config.BRIDGE_EXAMPLES
+      list.push(...bridgeExamples.map((text) => ({ text, note: 'Variance bridge: price, volume, mix and FX' })))
       list.push(...config.EXAMPLES.map((text) => ({ text })))
       list.push(...config.DIRECT_EXAMPLES.map((text) => ({ text, note: 'Query language, answered without AI', code: true })))
       return list

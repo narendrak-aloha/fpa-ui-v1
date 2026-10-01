@@ -43,6 +43,10 @@ const appConfig = {
     'Why did Poland miss its services revenue plan in Q2 2026? Break it down by practice.',
     'Why is delivery cost above plan for Q2 2026?',
   ],
+  PLANNER_BRIDGE_EXAMPLES: [
+    'Why did Poland miss its number in Q2 2026?',
+    'Why did Poland miss its number in Q2 2026 as of July close?',
+  ],
 
   // Offered to planners: a question that drafts a re-forecast for sign-off.
   // Short and imperative on purpose: a descriptive sentence is read as a
