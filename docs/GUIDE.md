@@ -143,20 +143,17 @@ are documented in the [API delivery notes](../../api/docs/DELIVERY.md).
 
 ## Unfinished and simplified
 
-- Creating an original plan remains a CLI/API action; Plans has no creation form.
 - An explanation can only reproduce a result when the API returns its operands.
   Missing operands are disclosed rather than guessed.
 - Browser automation for the full multi-user approval/restart flow is not included.
-- Quarterly headcount closing-period handling, missing bridge FX errors and
-  persistent compensation failure recovery remain API issues.
 - Scenario projections use the seeded branch numbers rather than re-deriving
   them from overrides; consolidation and the other optional assignment features
   are unfinished. See the [API delivery notes](../../api/docs/DELIVERY.md) for backend limitations and submission checks.
-- Local demo recordings exist; a shared demo link has not been provided.
+- The [demo video](https://drive.google.com/file/d/1sOo-8inC3GBFHp1oLkq7XPunaYJHrVQX/view?usp=sharing) is linked in the backend README.
 
 ## With two more weeks
 
-1. Add original-plan creation and a guided multi-user sign-off walkthrough.
+1. Add a guided multi-user sign-off walkthrough.
 2. Automate browser acceptance checks for scope, row calculations and workflow recovery.
 3. Improve keyboard and screen-reader coverage for tables and bridge drill-through.
 4. Add consolidation and cross-vintage analysis when the backend acceptance checks pass.
